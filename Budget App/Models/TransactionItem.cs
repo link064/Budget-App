@@ -136,10 +136,10 @@ namespace Budget_App.Models
         {
             TransactionItem item = new TransactionItem();
             // Hack to determine which bank this is
-            //"Status","Date","Description","Debit","Credit" -- Citi
+            //"Status","Date","Description","Debit","Credit"
             if (header.Contains("\"Status\",\"Date\",\"Description\",\"Debit\",\"Credit\""))
                 item.ReadCitiLine(line);
-            //account,date,amount,balance,category,description,memo,notes -- DATCU
+            //account,date,amount,balance,category,description,memo,notes
             else if (header.Contains("account,date,amount,balance,category,description,memo,notes") || isMaster)
                 item.ReadLine(line);
             else
