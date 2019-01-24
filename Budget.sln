@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2037
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Budget App", "Budget App\Budget App.csproj", "{75CE9144-6380-4F6C-A329-C703169549BE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{75CE9144-6380-4F6C-A329-C703169549BE}.Debug|x86.ActiveCfg = Debug|x86
+		{75CE9144-6380-4F6C-A329-C703169549BE}.Debug|x86.Build.0 = Debug|x86
+		{75CE9144-6380-4F6C-A329-C703169549BE}.Release|x86.ActiveCfg = Release|x86
+		{75CE9144-6380-4F6C-A329-C703169549BE}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FC24239F-3A9A-4864-80E5-6822CFDBF0A0}
+	EndGlobalSection
+EndGlobal
