@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Budget_App.Views;
+using System;
 using System.Windows.Forms;
 
 namespace Budget_App
@@ -15,7 +14,7 @@ namespace Budget_App
 		{
 			Application.EnableVisualStyles();
 			Application.SetCompatibleTextRenderingDefault(false);
-			Application.Run(new Form1());
+			Application.Run(new MainForm());
 		}
 	}
 }

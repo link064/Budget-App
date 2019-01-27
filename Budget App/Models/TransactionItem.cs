@@ -8,10 +8,6 @@ namespace Budget_App.Models
 {
 	public class TransactionItem : ModelBase<TransactionItem>
 	{
-		public TransactionItem()
-		{
-		}
-
         #region Properties
         private string _account;
 		public string Account
@@ -200,7 +196,7 @@ namespace Budget_App.Models
             TransType = cols.Length == 9 ? (TransactionTypes)Enum.Parse(typeof(TransactionTypes), cols[8]) : TransactionTypes.Unselected;
 
             if (TransType == TransactionTypes.Unselected)
-                TransType = TypeMatching.GetType(Memo, Description);
+                TransType = CategoryMatch.GetType(Memo, Description);
 
             if (TransType == TransactionTypes.Unselected && Description.Contains("Check Withdrawal") && Amount < 0)
                 TransType = TransactionTypes.Bill;
@@ -224,7 +220,7 @@ namespace Budget_App.Models
             Description = cols[2];
             Memo = cols[2]; // Citi doesn't have a memo column so we'll duplicate memo
             Notes = cols[0]; // Using status as notes - could change
-            TransType = TypeMatching.GetType(Memo, Description);
+            TransType = CategoryMatch.GetType(Memo, Description);
         }
 
         private static decimal StringToDecimal(string item)
