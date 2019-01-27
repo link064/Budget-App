@@ -22,7 +22,7 @@ namespace Budget_App.Views
         public BalanceGraph()
         {
             InitializeComponent();
-            cmbType.DataSource = Enum.GetNames(typeof(GraphPeriod));
+            cmbType.DataSource = Enum.GetValues(typeof(GraphPeriod));
         }
 
         public void AddPoints(List<object> Xpoints, List<object> Ypoints, string series)
@@ -115,11 +115,12 @@ namespace Budget_App.Views
         public void GeneratePointsLists(GraphPeriod period, bool addTotal = true, bool addTrend = false, DateTime? startDate = null, DateTime? endDate = null)
         {
             if (startDate == null || startDate.Value <= DateTime.MinValue || startDate.Value >= DateTime.MaxValue)
-                startDate = TransactionItem.GetCollection().Min(t => t.TransDate).AsDateTime.AddDays(-1);
+                startDate = TransactionItem.GetCollection().Find(t => t.TransDate > DateTime.MinValue).Min(t => t.TransDate).AddDays(-1);
             if (endDate == null || endDate.Value <= DateTime.MinValue || endDate.Value >= DateTime.MaxValue)
                 endDate = DateTime.Today;
                         
             _period = period;
+            cmbType.SelectedItem = period;
             _startDate = startDate.Value;
             _endDate = endDate.Value;
             dtpStartDate.Value = startDate.Value;
@@ -296,7 +297,7 @@ namespace Budget_App.Views
 
         private void cmbType_SelectedIndexChanged(object sender, EventArgs e)
         {
-            GeneratePointsLists((GraphPeriod)Enum.Parse(typeof(GraphPeriod), cmbType.SelectedValue as string), true, cbTrendLine.Checked, dtpStartDate.Value, _endDate);
+            GeneratePointsLists((GraphPeriod)cmbType.SelectedValue, true, cbTrendLine.Checked, dtpStartDate.Value, _endDate);
         }
     }
 

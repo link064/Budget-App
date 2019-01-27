@@ -196,7 +196,7 @@ namespace Budget_App.Models
             TransType = cols.Length == 9 ? (TransactionTypes)Enum.Parse(typeof(TransactionTypes), cols[8]) : TransactionTypes.Unselected;
 
             if (TransType == TransactionTypes.Unselected)
-                TransType = CategoryMatch.GetType(Memo, Description);
+                TransType = CategoryMatch.GetType(this.ToString());
 
             if (TransType == TransactionTypes.Unselected && Description.Contains("Check Withdrawal") && Amount < 0)
                 TransType = TransactionTypes.Bill;
@@ -220,7 +220,7 @@ namespace Budget_App.Models
             Description = cols[2];
             Memo = cols[2]; // Citi doesn't have a memo column so we'll duplicate memo
             Notes = cols[0]; // Using status as notes - could change
-            TransType = CategoryMatch.GetType(Memo, Description);
+            TransType = CategoryMatch.GetType(this.ToString());
         }
 
         private static decimal StringToDecimal(string item)

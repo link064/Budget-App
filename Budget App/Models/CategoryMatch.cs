@@ -12,20 +12,25 @@ namespace Budget_App.Models
 
         public TransactionItem.TransactionTypes MatchType { get; set; }
 
-        public static TransactionItem.TransactionTypes GetType(string memo, string description)
+        private static List<CategoryMatch> _matches;
+        public static TransactionItem.TransactionTypes GetType(string value)
         {
             try
             {
-                return GetCollection()
-                    .Find(c => memo.IndexOf(c.MatchString, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               description.IndexOf(c.MatchString, StringComparison.OrdinalIgnoreCase) >= 0)
-                    .FirstOrDefault()?.MatchType ?? 
+                if (_matches == null)
+                    _matches = GetCollection().FindAll().ToList();
+                return _matches.FirstOrDefault(c => value.IndexOf(c.MatchString, StringComparison.OrdinalIgnoreCase) >= 0)?.MatchType ?? 
                     TransactionItem.TransactionTypes.Unselected;
             }
             catch
             {
                 return TransactionItem.TransactionTypes.Unselected;
             }
+        }
+
+        public static void ResetCategoriesCache()
+        {
+            _matches = null;
         }
     }
 }

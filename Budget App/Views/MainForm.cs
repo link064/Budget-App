@@ -300,14 +300,17 @@ namespace Budget_App.Views
 
             foreach (TransactionItem trans in TransactionItem.GetCollection().Find(t => t.TransType == TransactionItem.TransactionTypes.Unselected))
             {
-                trans.TransType = CategoryMatch.GetType(trans.Memo, trans.Description);
-                TransactionItem.GetCollection().Update(trans);
+                var newType = CategoryMatch.GetType(trans.ToString());
+                if (newType != trans.TransType)
+                {
+                    trans.TransType = newType;
+                    TransactionItem.GetCollection().Update(trans);
+                }
             }
 
-            foreach (TransactionItem trans in filteredList)
+            foreach (TransactionItem trans in filteredList.Where(f => f.TransType == TransactionItem.TransactionTypes.Unselected))
             {
-                if (trans.TransType == TransactionItem.TransactionTypes.Unselected)
-                    trans.TransType = CategoryMatch.GetType(trans.Memo, trans.Description);
+                trans.TransType = CategoryMatch.GetType(trans.ToString());
             }
             // Reset the view   
             dgTransactions.DataSource = filteredList;

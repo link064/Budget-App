@@ -40,6 +40,8 @@ namespace Budget_App.Views
 
             CategoryMatch.GetCollection().Insert(new CategoryMatch { MatchString = text, MatchType = category });
 
+            CategoryMatch.ResetCategoriesCache();
+
 			this.Close();
 		}
 

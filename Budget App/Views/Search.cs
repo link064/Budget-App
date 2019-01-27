@@ -21,26 +21,24 @@ namespace Budget_App.Views
             dgcolDate.DataPropertyName = "TransDate";
             dgcolCategory.DataSource = Enum.GetValues(typeof(TransactionItem.TransactionTypes));
             dgcolCategory.DataPropertyName = "TransType";
-            dgcolNote.DataPropertyName = "Memo";
+            dgcolDescription.DataPropertyName = "Description";
+            dgcolMemo.DataPropertyName = "Memo";
 
             TxtSearch_TextChanged(null, null);
         }
         
         private void TxtSearch_TextChanged(object sender, EventArgs e)
         {
-            const StringComparison c = StringComparison.OrdinalIgnoreCase;
             var results = TransactionItem.GetCollection().FindAll().ToList();
 
             List<string> terms = (txtSearch.Text ?? string.Empty).Split(',').Where(t => !string.IsNullOrEmpty(t)).ToList();
             if (terms.Count > 0)
                 results = results.Where(trans => terms.Any(term =>
-                    term.IndexOf(trans.Category, c) >= 0 ||
-                    term.IndexOf(trans.Description, c) >= 0 ||
-                    term.IndexOf(trans.Memo, c) >= 0 ||
-                    term.IndexOf(trans.Notes, c) >= 0 ||
-                    term.IndexOf(trans.TransType.ToString(), c) >= 0)).ToList();
+                    FindTerm(term, trans.Category, trans.Description, trans.Memo, trans.Notes, trans.TransType.ToString()))).ToList();
 
-            results.Sort(delegate(TransactionItem t1, TransactionItem t2) { return t1.TransDate.CompareTo(t2.TransDate); });
+            results.Sort(delegate (TransactionItem t1, TransactionItem t2) { return t1.TransDate.CompareTo(t2.TransDate); });
+
+            results = results.Take(100).ToList();
 
             dgTransactions.DataSource = results;
         }
@@ -92,6 +90,22 @@ namespace Budget_App.Views
             }
             dgTransactions.DataSource = filteredList;
             dgTransactions.Refresh();
+        }
+
+        private bool FindTerm(string term, params string[] values)
+        {
+            const StringComparison c = StringComparison.OrdinalIgnoreCase;
+
+            if (string.IsNullOrEmpty(term))
+                return false;
+
+            foreach(string value in values)
+            {
+                if (!string.IsNullOrEmpty(value) && value.IndexOf(term, c) >= 0)
+                    return true;
+            }
+
+            return false;
         }
     }
 }
