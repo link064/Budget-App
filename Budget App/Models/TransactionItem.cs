@@ -135,6 +135,8 @@ namespace Budget_App.Models
             //"Status","Date","Description","Debit","Credit"
             if (header.Contains("\"Status\",\"Date\",\"Description\",\"Debit\",\"Credit\""))
                 item.ReadCitiLine(line);
+            else if (header.Contains("Status,Date,Description,Debit,Credit"))
+                item.ReadCitiLine2(line);
             //account,date,amount,balance,category,description,memo,notes
             else if (header.Contains("account,date,amount,balance,category,description,memo,notes") || isMaster)
                 item.ReadLine(line);
@@ -223,11 +225,54 @@ namespace Budget_App.Models
             TransType = CategoryMatch.GetType(this.ToString());
         }
 
+        private void ReadCitiLine2(string line)
+        {
+            // new format is csv with description quoted. need to split on commas but only ones outside of quotes
+            List<string> colValues = new List<string>();
+            int start = 0;
+            bool insideQuotes = false;
+            for(int i = 0; i < line.Length; i++)
+            {
+                if (line[i] == ',' && !insideQuotes)
+                {
+                    colValues.Add(line.Substring(start, i - start));
+                    start = i + 1;
+                    if (start >= line.Length)
+                        colValues.Add(string.Empty);
+                }
+
+                if(line[i] != ',' && i == line.Length - 1)
+                {
+                    colValues.Add(line.Substring(start, i - start + 1));
+                }
+
+                if (line[i] == '"')
+                    insideQuotes = !insideQuotes;
+            }
+            string[] cols = colValues.Select(s => s.Trim('"').Replace(",", "")).ToArray();
+            if (cols.Length != 5)
+                throw new ArgumentException(string.Format("Invalid Citi line length - '{0}'\r\nExpected 5, found {1}", line, cols.Length));
+
+            Account = "CITI";
+            TransDate = DateTime.Parse(cols[1]);
+
+            string debit = string.IsNullOrEmpty(cols[3]) ? "0" : cols[3];
+            string credit = string.IsNullOrEmpty(cols[4]) ? "0" : cols[4];
+            Amount = StringToDecimal(debit) + StringToDecimal(credit); // Citi splits out the debit and credit columns
+
+            Balance = 0m; // Citi doesn't include balance -- problematic...
+            Category = ""; // Citi doesn't include category
+            Description = cols[2];
+            Memo = cols[2]; // Citi doesn't have a memo column so we'll duplicate memo
+            Notes = cols[0]; // Using status as notes - could change
+            TransType = CategoryMatch.GetType(this.ToString());
+        }
+
         private static decimal StringToDecimal(string item)
         {
             decimal value = 1;
             string itemValue = item.Replace("$", "").Replace(",", "");
-            if (item.Contains("(") && item.Contains(")")) // value is negative
+            if ((item.Contains("(") && item.Contains(")")) || item.StartsWith("-")) // value is negative
             {
                 value = -1;
                 itemValue = itemValue.Replace("(", "").Replace(")", "");
