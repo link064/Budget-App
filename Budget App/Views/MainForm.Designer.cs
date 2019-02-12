@@ -28,7 +28,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
             this.dgTransactions = new System.Windows.Forms.DataGridView();
             this.dgcolDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dgcolAmount = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -52,6 +52,7 @@
             this.searchToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.cmbAccount = new System.Windows.Forms.ComboBox();
+            this.button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dgTransactions)).BeginInit();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -92,9 +93,9 @@
             // 
             this.dgcolAmount.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
             this.dgcolAmount.DataPropertyName = "Amount";
-            dataGridViewCellStyle1.Format = "C2";
-            dataGridViewCellStyle1.NullValue = null;
-            this.dgcolAmount.DefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle10.Format = "C2";
+            dataGridViewCellStyle10.NullValue = null;
+            this.dgcolAmount.DefaultCellStyle = dataGridViewCellStyle10;
             this.dgcolAmount.FillWeight = 25F;
             this.dgcolAmount.HeaderText = "Amount";
             this.dgcolAmount.Name = "dgcolAmount";
@@ -266,11 +267,22 @@
             this.cmbAccount.TabIndex = 6;
             this.cmbAccount.SelectedValueChanged += new System.EventHandler(this.cmbAccount_SelectedValueChanged);
             // 
-            // Form1
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(1027, 920);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(168, 23);
+            this.button1.TabIndex = 7;
+            this.button1.Text = "Delete selected row";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1209, 955);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.cmbAccount);
             this.Controls.Add(this.lblTotalAmounts);
             this.Controls.Add(this.lblTotals);
@@ -281,7 +293,7 @@
             this.MainMenuStrip = this.menuStrip1;
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
-            this.Name = "Form1";
+            this.Name = "MainForm";
             this.Text = "Budget";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Resize += new System.EventHandler(this.Form1_Resize);
@@ -318,6 +330,7 @@
         private System.Windows.Forms.DataGridViewComboBoxColumn dgcolCategory;
         private System.Windows.Forms.DataGridViewTextBoxColumn dgcolDescription;
         private System.Windows.Forms.DataGridViewTextBoxColumn dgcolNote;
+        private System.Windows.Forms.Button button1;
     }
 }
 

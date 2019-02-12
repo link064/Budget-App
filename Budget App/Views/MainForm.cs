@@ -18,7 +18,8 @@ namespace Budget_App.Views
 		public MainForm()
 		{
 			InitializeComponent();
-			InitGrids();						
+            ImportCategoryMatching(); // Legacy support
+            InitGrids();
 		}
 				
 		#region Events
@@ -60,6 +61,7 @@ namespace Budget_App.Views
 			{
 				List<TransactionItem> newItems = new List<TransactionItem>();
                 string account = string.Empty;
+                DateTime lastDate = DateTime.MinValue;
 
 				using (StreamReader sr = new StreamReader(openFileDialog1.FileName))
 				{
@@ -79,6 +81,8 @@ namespace Budget_App.Views
                             MessageBox.Show(string.Format("File import aborted: \r\n{0}\r\n{1}", ex.Message, line));
                             return;
                         }
+                        if (item.TransDate > lastDate)
+                            lastDate = item.TransDate;
                         if (string.IsNullOrEmpty(account))
                             account = item.Account;
                         if (TransactionItem.GetCollection().Exists(t => t.Equals(item)))
@@ -88,7 +92,7 @@ namespace Budget_App.Views
                     TransactionItem.GetCollection().InsertBulk(newItems);
 				}
 
-                BackupTransactionFile(openFileDialog1.FileName, account);
+                BackupTransactionFile(openFileDialog1.FileName, account, lastDate);
 
 				InitGrids();
 			}
@@ -97,7 +101,7 @@ namespace Budget_App.Views
 		private void dgTransactions_CellEndEdit(object sender, DataGridViewCellEventArgs e)
 		{
 			CalculateTotals(lblTotalAmounts, (List<TransactionItem>)dgTransactions.DataSource);
-            // TODO: Update record
+            TransactionItem.GetCollection().Update(((TransactionItem)dgTransactions.Rows[e.RowIndex].DataBoundItem));
 		}
 
 		private void dgTransactions_RowHeaderMouseDoubleClick(object sender, DataGridViewCellMouseEventArgs e)
@@ -145,20 +149,6 @@ namespace Budget_App.Views
 
 		private void duplicateCheckToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-            // TEMP
-            TransactionItem.GetCollection().Insert(new TransactionItem()
-            {
-                Account = "test",
-                Amount = 123,
-                Balance = 345,
-                Category = "something",
-                Description = "description",
-                Memo = "test memo",
-                Notes = "test notes",
-                TransDate = DateTime.Now,
-                TransType = TransactionItem.TransactionTypes.Unselected
-            });
-
             // TODO: Is this still needed?
 			//List<TransactionItem> newItems = new List<TransactionItem>();
 			//foreach (TransactionItem item in items)
@@ -327,7 +317,19 @@ namespace Budget_App.Views
             //}
         }
 
-        private void BackupTransactionFile(string fileName, string account)
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var selectedList = dgTransactions.SelectedRows.Cast<DataGridViewRow>().Select(r => (TransactionItem)r.DataBoundItem).ToList();
+            var selectString = string.Join("\r\n", selectedList.Select(s => s.ToString()));
+            if (MessageBox.Show(string.Format("Are you sure you want to delete:\r\n{0}", selectString), "Row delete confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                TransactionItem.GetCollection().Delete(t => selectedList.Exists(s =>  s.Id == t.Id));
+            }
+
+            InitGrids();
+        }
+
+        private void BackupTransactionFile(string fileName, string account, DateTime lastDate)
         {
             string backupDirPath = Directory.GetCurrentDirectory() + "\\Trans backups";
             if (!Directory.Exists(backupDirPath))
@@ -338,9 +340,12 @@ namespace Budget_App.Views
                 fileType = "Savings " + fileType;
             else if (account.Contains("CITI")) // Citi card
                 fileType = "Citi " + fileType;
+            else if (account.Contains("Category"))
+                fileType = account;
+
 
             string backupFile = Path.Combine(backupDirPath,
-                            string.Format("{0} {1}.csv", fileType, DateTime.Now.ToString("yyyy-MM-dd")));
+                            string.Format("{0} {1}.csv", fileType, lastDate.ToString("yyyy-MM-dd")));
 
             int i = 1;
             string backupFile2 = backupFile;
@@ -351,6 +356,47 @@ namespace Budget_App.Views
             backupFile = backupFile2;
 
             File.Move(fileName, backupFile);
+        }
+
+        private void ImportCategoryMatching()
+        {
+            if (File.Exists(Environment.CurrentDirectory + "\\CategoryMatching.txt"))
+            {
+                using (StreamReader sr = new StreamReader(Environment.CurrentDirectory + "\\CategoryMatching.txt"))
+                {
+                    List<CategoryMatch> matches = new List<CategoryMatch>();
+                    string line;
+                    while (!string.IsNullOrEmpty(line = sr.ReadLine()))
+                    {
+                        string[] itemType = line.Split('\t');
+                        if (itemType.Length != 2)
+                            continue;
+                        try
+                        {
+                            matches.Add(new CategoryMatch()
+                            {
+                                MatchString = itemType[0],
+                                MatchType = (TransactionItem.TransactionTypes)Enum.Parse(typeof(TransactionItem.TransactionTypes), itemType[1])
+                            });
+                        }
+                        catch { MessageBox.Show(line, "Item incorrectly set up: " + line); }
+                    }
+
+                    CategoryMatch.GetCollection().InsertBulk(matches);
+
+                    foreach (TransactionItem trans in TransactionItem.GetCollection().Find(t => t.TransType == TransactionItem.TransactionTypes.Unselected))
+                    {
+                        var newType = CategoryMatch.GetType(trans.ToString());
+                        if (newType != trans.TransType)
+                        {
+                            trans.TransType = newType;
+                            TransactionItem.GetCollection().Update(trans);
+                        }
+                    }
+                }
+
+                BackupTransactionFile(Environment.CurrentDirectory + "\\CategoryMatching.txt", "Category Matching", DateTime.Now);
+            }
         }
 		#endregion		        
 
