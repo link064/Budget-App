@@ -21,14 +21,208 @@ namespace Budget_App.Views
             ImportCategoryMatching(); // Legacy support
             InitGrids();
 		}
-				
-		#region Events
-		private void Form1_Resize(object sender, EventArgs e)
+
+        #region Transaction Grid
+        private void dgTransactions_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            CalculateTotals(lblTotalAmounts, (List<TransactionItem>)dgTransactions.DataSource);
+            TransactionItem.GetCollection().Update(((TransactionItem)dgTransactions.Rows[e.RowIndex].DataBoundItem));
+        }
+
+        private void dgTransactions_RowHeaderMouseDoubleClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            StringBuilder sb = new StringBuilder();
+            TransactionItem t = ((List<TransactionItem>)dgTransactions.DataSource)[e.RowIndex];
+            sb.AppendLine("Do you want to add a category match for this item?");
+            sb.AppendLine();
+            sb.AppendLine("Account: " + t.Account);
+            sb.AppendLine("Amount: " + t.Amount);
+            sb.AppendLine("Balance: " + t.Balance);
+            sb.AppendLine("Category: " + t.Category);
+            sb.AppendLine("Description: " + t.Description);
+            sb.AppendLine("Memo: " + t.Memo);
+            sb.AppendLine("Notes: " + t.Notes);
+            sb.AppendLine("Date: " + t.TransDate.ToShortDateString());
+            sb.AppendLine("Type: " + t.TransType.ToString());
+
+            AddCategoryMatch match = new AddCategoryMatch(sb.ToString(), t.Memo);
+            match.Show();
+            match.FormClosed += new FormClosedEventHandler(Match_FormClosed);
+        }
+
+        int sortDate = 1, sortAmount = 0, sortCategory = 0, sortNote = 0;
+        private void dgTransactions_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            List<TransactionItem> filteredList = (List<TransactionItem>)dgTransactions.DataSource;
+            switch (e.ColumnIndex)
+            {
+                case 0: //Date
+                    if (sortDate == 0)
+                        sortDate = -1;
+                    sortDate *= -1; // Negate the current sort
+                    sortAmount = 0;
+                    sortCategory = 0;
+                    sortNote = 0;
+                    filteredList.Sort(delegate (TransactionItem t1, TransactionItem t2) { return t1.TransDate.CompareTo(t2.TransDate) * sortDate; });
+                    break;
+                case 1: //Amount
+                    if (sortAmount == 0)
+                        sortAmount = -1;
+                    sortAmount *= -1;
+                    sortDate = 0;
+                    sortCategory = 0;
+                    sortNote = 0;
+                    filteredList.Sort(delegate (TransactionItem t1, TransactionItem t2) { return t1.Amount.CompareTo(t2.Amount) * sortAmount; });
+                    break;
+                case 2: //Category
+                    if (sortCategory == 0)
+                        sortCategory = -1;
+                    sortCategory *= -1;
+                    sortDate = 0;
+                    sortAmount = 0;
+                    sortNote = 0;
+                    filteredList.Sort(delegate (TransactionItem t1, TransactionItem t2) { return t1.TransType.CompareTo(t2.TransType) * sortCategory; });
+                    break;
+                case 3: //Note
+                    if (sortNote == 0)
+                        sortNote = -1;
+                    sortNote *= -1;
+                    sortDate = 0;
+                    sortAmount = 0;
+                    sortCategory = 0;
+                    filteredList.Sort(delegate (TransactionItem t1, TransactionItem t2) { return t1.Memo.CompareTo(t2.Memo) * sortNote; });
+                    break;
+                default:
+                    return;
+            }
+            dgTransactions.DataSource = filteredList;
+            dgTransactions.Refresh();
+        }
+
+        private void dgTransactions_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            // Eventually we'll want to cast unknown types to Unselected
+            //foreach(DataGridViewRow row in dgTransactions.Rows)
+            //{
+            //    if (!((List<string>)dgcolCategory.DataSource).Contains(row.Cells[2].Value))
+            //        row.Cells[2].Value = "Unselected";
+            //}
+        }
+        #endregion
+
+        #region Menu Items
+        private void newCSVToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                List<TransactionItem> newItems = new List<TransactionItem>();
+                string account = string.Empty;
+                DateTime lastDate = DateTime.MinValue;
+
+                using (StreamReader sr = new StreamReader(openFileDialog1.FileName))
+                {
+                    string headerLine = sr.ReadLine();
+                    string line = string.Empty;
+                    while (!string.IsNullOrEmpty(line = sr.ReadLine()))
+                    {
+                        while (line.Where(c => c == '"').Count() % 2 == 1) // Read until all quotes are matched
+                            line += sr.ReadLine();
+                        TransactionItem item = null;
+                        try
+                        {
+                            item = TransactionItem.ImportItem(line, headerLine);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(string.Format("File import aborted: \r\n{0}\r\n{1}", ex.Message, line));
+                            return;
+                        }
+                        if (item.TransDate > lastDate)
+                            lastDate = item.TransDate;
+                        if (string.IsNullOrEmpty(account))
+                            account = item.Account;
+                        if (TransactionItem.GetCollection().Exists(t => t.Equals(item)))
+                            continue;
+                        newItems.Add(item);
+                    }
+                    TransactionItem.GetCollection().InsertBulk(newItems);
+                }
+
+                BackupTransactionFile(openFileDialog1.FileName, account, lastDate);
+
+                InitGrids();
+            }
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void monthsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Comparisons comp = new Comparisons((List<string>)cmbDateSelect.DataSource);
+            comp.Show();
+        }
+
+        private void yearsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            List<string> dates = TransactionItem.GetCollection().FindAll().Select(i => i.TransDate.ToString("yyyy")).Distinct().ToList();
+
+            Comparisons comp = new Comparisons(dates);
+            comp.Show();
+        }
+
+        private void duplicateCheckToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // TODO: Is this still needed?
+            //List<TransactionItem> newItems = new List<TransactionItem>();
+            //foreach (TransactionItem item in items)
+            //{
+            //	bool found = false;
+            //	foreach (TransactionItem check in newItems)
+            //		if (item.Equals(check))
+            //			found = true;
+
+            //	if (!found)
+            //		newItems.Add(item);
+            //}
+
+            //items = newItems;
+
+            //GetAccounts();
+            //GetDates();
+
+            ManageCategoryMatch manageCategoryMatch = new ManageCategoryMatch();
+            manageCategoryMatch.Show();
+        }
+
+        private void lineToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            BalanceGraph graph = new BalanceGraph();
+            graph.GeneratePointsLists(GraphPeriod.Monthly);
+            graph.Show();
+        }
+
+        private void searchToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Search s = new Search();
+            s.Show();
+        }
+        #endregion
+
+        #region Form Events
+        private void Form1_Resize(object sender, EventArgs e)
 		{
 			// TODO: resize components to fit
 		}
 
-		private void cmbDateSelect_SelectedValueChanged(object sender, EventArgs e)
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            TransactionItem.CloseDatabase();
+        }
+
+        private void cmbDateSelect_SelectedValueChanged(object sender, EventArgs e)
 		{
             var list = TransactionItem.GetCollection()
                 .Find(t => t.TransDate.ToString(DATEFORMAT).Equals(cmbDateSelect.SelectedItem)
@@ -55,171 +249,21 @@ namespace Budget_App.Views
                 cmbDateSelect.SelectedIndex = 0;
 		}
 
-		private void newCSVToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-			if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-			{
-				List<TransactionItem> newItems = new List<TransactionItem>();
-                string account = string.Empty;
-                DateTime lastDate = DateTime.MinValue;
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var selectedList = dgTransactions.SelectedRows.Cast<DataGridViewRow>().Select(r => (TransactionItem)r.DataBoundItem).ToList();
+            var selectString = string.Join("\r\n", selectedList.Select(s => s.ToString()));
+            if (MessageBox.Show(string.Format("Are you sure you want to delete:\r\n{0}", selectString), "Row delete confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                TransactionItem.GetCollection().Delete(t => selectedList.Exists(s => s.Id == t.Id));
+            }
 
-				using (StreamReader sr = new StreamReader(openFileDialog1.FileName))
-				{
-                    string headerLine = sr.ReadLine();
-                    string line = string.Empty;
-					while (!string.IsNullOrEmpty(line = sr.ReadLine()))
-					{
-                        while (line.Where(c => c == '"').Count() % 2 == 1) // Read until all quotes are matched
-                            line += sr.ReadLine();
-                        TransactionItem item = null;
-                        try
-                        {
-                            item = TransactionItem.ImportItem(line, headerLine);
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(string.Format("File import aborted: \r\n{0}\r\n{1}", ex.Message, line));
-                            return;
-                        }
-                        if (item.TransDate > lastDate)
-                            lastDate = item.TransDate;
-                        if (string.IsNullOrEmpty(account))
-                            account = item.Account;
-                        if (TransactionItem.GetCollection().Exists(t => t.Equals(item)))
-                            continue;
-						newItems.Add(item);
-					}
-                    TransactionItem.GetCollection().InsertBulk(newItems);
-				}
+            InitGrids();
+        }
+        #endregion
 
-                BackupTransactionFile(openFileDialog1.FileName, account, lastDate);
-
-				InitGrids();
-			}
-		}
-
-		private void dgTransactions_CellEndEdit(object sender, DataGridViewCellEventArgs e)
-		{
-			CalculateTotals(lblTotalAmounts, (List<TransactionItem>)dgTransactions.DataSource);
-            TransactionItem.GetCollection().Update(((TransactionItem)dgTransactions.Rows[e.RowIndex].DataBoundItem));
-		}
-
-		private void dgTransactions_RowHeaderMouseDoubleClick(object sender, DataGridViewCellMouseEventArgs e)
-		{
-			StringBuilder sb = new StringBuilder();
-			TransactionItem t = ((List<TransactionItem>)dgTransactions.DataSource)[e.RowIndex];
-			sb.AppendLine("Do you want to add a category match for this item?");
-			sb.AppendLine();
-			sb.AppendLine("Account: " + t.Account);
-			sb.AppendLine("Amount: " + t.Amount);
-			sb.AppendLine("Balance: " + t.Balance);
-			sb.AppendLine("Category: " + t.Category);
-			sb.AppendLine("Description: " + t.Description);
-			sb.AppendLine("Memo: " + t.Memo);
-			sb.AppendLine("Notes: " + t.Notes);
-			sb.AppendLine("Date: " + t.TransDate.ToShortDateString());
-			sb.AppendLine("Type: " + t.TransType.ToString());
-
-            AddToCategoryMatch(sb.ToString(), t.Memo);
-		}
-
-		private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-		{
-            TransactionItem.CloseDatabase();
-		}
-
-		private void exitToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-			this.Close();
-		}
-
-		private void monthsToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-			Comparisons comp = new Comparisons((List<string>)cmbDateSelect.DataSource);
-			comp.Show();
-		}
-
-		private void yearsToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-			List<string> dates = TransactionItem.GetCollection().FindAll().Select(i => i.TransDate.ToString("yyyy")).Distinct().ToList();
-
-			Comparisons comp = new Comparisons(dates);
-			comp.Show();
-		}
-
-		private void duplicateCheckToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-            // TODO: Is this still needed?
-			//List<TransactionItem> newItems = new List<TransactionItem>();
-			//foreach (TransactionItem item in items)
-			//{
-			//	bool found = false;
-			//	foreach (TransactionItem check in newItems)
-			//		if (item.Equals(check))
-			//			found = true;
-
-			//	if (!found)
-			//		newItems.Add(item);
-			//}
-
-			//items = newItems;
-
-			GetAccounts();
-			GetDates();
-		}
-
-		int sortDate = 1, sortAmount = 0, sortCategory = 0, sortNote = 0;
-		private void dgTransactions_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
-		{
-			List<TransactionItem> filteredList = (List<TransactionItem>)dgTransactions.DataSource;
-			switch (e.ColumnIndex)
-			{
-				case 0: //Date
-					if (sortDate == 0)
-						sortDate = -1;
-					sortDate *= -1; // Negate the current sort
-					sortAmount = 0;
-					sortCategory = 0;
-					sortNote = 0;
-					filteredList.Sort(delegate(TransactionItem t1, TransactionItem t2) { return t1.TransDate.CompareTo(t2.TransDate) * sortDate; });
-					break;
-				case 1: //Amount
-					if (sortAmount == 0)
-						sortAmount = -1;
-					sortAmount *= -1;
-					sortDate = 0;
-					sortCategory = 0;
-					sortNote = 0;
-					filteredList.Sort(delegate(TransactionItem t1, TransactionItem t2) { return t1.Amount.CompareTo(t2.Amount) * sortAmount; });
-					break;
-				case 2: //Category
-					if (sortCategory == 0)
-						sortCategory = -1;
-					sortCategory *= -1;
-					sortDate = 0;
-					sortAmount = 0;
-					sortNote = 0;
-					filteredList.Sort(delegate(TransactionItem t1, TransactionItem t2) { return t1.TransType.CompareTo(t2.TransType) * sortCategory; });
-					break;
-				case 3: //Note
-					if (sortNote == 0)
-						sortNote = -1;
-					sortNote *= -1;
-					sortDate = 0;
-					sortAmount = 0;
-					sortCategory = 0;
-					filteredList.Sort(delegate(TransactionItem t1, TransactionItem t2) { return t1.Memo.CompareTo(t2.Memo) * sortNote; });
-					break;
-				default:
-					return;
-			}
-			dgTransactions.DataSource = filteredList;
-			dgTransactions.Refresh();
-		}         
-		#endregion
-
-		#region Functions
-		private void InitGrids()
+        #region Functions
+        private void InitGrids()
 		{
 			dgTransactions.AutoGenerateColumns = false;
             dgcolCategory.DataSource = Enum.GetValues(typeof(TransactionItem.TransactionTypes)); //TransactionType.GetNames();
@@ -277,14 +321,7 @@ namespace Budget_App.Views
 			label.Text += "Total: " + total;
 		}
 
-		private void AddToCategoryMatch(string headerText, string category = "")
-		{
-			AddCategoryMatch match = new AddCategoryMatch(headerText, category);
-			match.Show();
-            match.FormClosed += new FormClosedEventHandler(Match_FormClosed);            
-		}
-
-        void Match_FormClosed(object sender, FormClosedEventArgs e)
+        private void Match_FormClosed(object sender, FormClosedEventArgs e)
         {
             List<TransactionItem> filteredList = (List<TransactionItem>)dgTransactions.DataSource;
 
@@ -306,29 +343,7 @@ namespace Budget_App.Views
             dgTransactions.DataSource = filteredList;
             dgTransactions.Refresh();
         }
-
-        private void dgTransactions_DataBindingComplete(object sender, DataGridViewBindingCompleteEventArgs e)
-        {
-            // Eventually we'll want to cast unknown types to Unselected
-            //foreach(DataGridViewRow row in dgTransactions.Rows)
-            //{
-            //    if (!((List<string>)dgcolCategory.DataSource).Contains(row.Cells[2].Value))
-            //        row.Cells[2].Value = "Unselected";
-            //}
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            var selectedList = dgTransactions.SelectedRows.Cast<DataGridViewRow>().Select(r => (TransactionItem)r.DataBoundItem).ToList();
-            var selectString = string.Join("\r\n", selectedList.Select(s => s.ToString()));
-            if (MessageBox.Show(string.Format("Are you sure you want to delete:\r\n{0}", selectString), "Row delete confirmation", MessageBoxButtons.YesNo) == DialogResult.Yes)
-            {
-                TransactionItem.GetCollection().Delete(t => selectedList.Exists(s =>  s.Id == t.Id));
-            }
-
-            InitGrids();
-        }
-
+        
         private void BackupTransactionFile(string fileName, string account, DateTime lastDate)
         {
             string backupDirPath = Directory.GetCurrentDirectory() + "\\Trans backups";
@@ -399,18 +414,5 @@ namespace Budget_App.Views
             }
         }
 		#endregion		        
-
-        private void lineToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            BalanceGraph graph = new BalanceGraph();
-            graph.GeneratePointsLists(GraphPeriod.Monthly);
-            graph.Show();
-        }
-
-        private void searchToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Search s = new Search();
-            s.Show();
-        }
 	}    
 }

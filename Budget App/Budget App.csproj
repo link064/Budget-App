@@ -72,10 +72,10 @@
     <Compile Include="Views\Comparisons.Designer.cs">
       <DependentUpon>Comparisons.cs</DependentUpon>
     </Compile>
-    <Compile Include="CSVInputSetup.cs">
+    <Compile Include="Views\CSVInputSetup.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="CSVInputSetup.Designer.cs">
+    <Compile Include="Views\CSVInputSetup.Designer.cs">
       <DependentUpon>CSVInputSetup.cs</DependentUpon>
     </Compile>
     <Compile Include="Views\MainForm.cs">
@@ -84,12 +84,18 @@
     <Compile Include="Views\MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="InputFormat.cs" />
+    <Compile Include="Models\InputFormat.cs" />
     <Compile Include="Models\ImportSpec.cs" />
     <Compile Include="Models\ModelBase.cs" />
     <Compile Include="Models\TransactionType.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Views\ManageCategoryMatch.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\ManageCategoryMatch.Designer.cs">
+      <DependentUpon>ManageCategoryMatch.cs</DependentUpon>
+    </Compile>
     <Compile Include="Views\Search.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -106,7 +112,7 @@
     <EmbeddedResource Include="Views\Comparisons.resx">
       <DependentUpon>Comparisons.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="CSVInputSetup.resx">
+    <EmbeddedResource Include="Views\CSVInputSetup.resx">
       <DependentUpon>CSVInputSetup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Views\MainForm.resx">
@@ -122,6 +128,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="Views\ManageCategoryMatch.resx">
+      <DependentUpon>ManageCategoryMatch.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Views\Search.resx">
       <DependentUpon>Search.cs</DependentUpon>
     </EmbeddedResource>
